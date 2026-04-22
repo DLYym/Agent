@@ -29,7 +29,7 @@ import java.util.List;
 @Slf4j
 public class StreamingAiServiceConfiguration {
     private String MCP_REMOTE_SERVER_URL = "";
-    private String SKILLS_DIRECTORY = "C:\\Users\\Wyman\\Desktop\\AI\\Text2Sql\\src\\main\\resources\\skills";
+    private String SKILLS_DIRECTORY = "src/main/resources/skills";
     /**
      * 使用流式聊天模型构建 SQL 生成器，便于前端逐 token 展示生成过程。
      */
