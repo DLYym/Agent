@@ -1,0 +1,4 @@
+/*
+ * 兼容旧页面对 /css/element.css 的引用，样式从 CDN 加载。
+ */
+@import url("https://unpkg.com/element-plus/dist/index.css");

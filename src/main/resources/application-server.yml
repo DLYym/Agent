@@ -1,0 +1,17 @@
+spring:
+  config:
+    activate:
+      on-profile: server
+
+server:
+  servlet:
+    context-path: /text2sql
+
+app:
+  elasticsearch:
+    enabled: ${APP_ELASTICSEARCH_ENABLED:true}
+    base-url: ${APP_ELASTICSEARCH_BASE_URL:http://elasticsearch:9200}
+    index-name: ${APP_ELASTICSEARCH_INDEX_NAME:text2sql_schema}
+    username: ${APP_ELASTICSEARCH_USERNAME:}
+    password: ${APP_ELASTICSEARCH_PASSWORD:}
+    allow-in-memory-fallback: ${APP_ELASTICSEARCH_ALLOW_IN_MEMORY_FALLBACK:true}

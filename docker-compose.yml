@@ -1,0 +1,107 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: text2sql-db
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123321}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-text2sql_db}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      # 把需要初始化的 SQL 放到 ./init 目录下，会在首次建库时自动执行。
+      - ./init:/docker-entrypoint-initdb.d:ro
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --performance-schema=0
+      --table-open-cache=128
+      --innodb-buffer-pool-size=128M
+      --max-connections=30
+      --tmp-table-size=16M
+      --max-heap-table-size=16M
+    ports:
+      - "3307:3306"
+    mem_limit: 384m
+    cpus: 0.65
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD:-123321}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - text2sql-net
+
+  elasticsearch:
+    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch:8.19.10}
+    container_name: text2sql-es
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      discovery.type: single-node
+      cluster.name: text2sql-es
+      node.name: text2sql-es-01
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+      bootstrap.memory_lock: "true"
+      ingest.geoip.downloader.enabled: "false"
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms384m -Xmx384m}
+    volumes:
+      - ./es_data:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 640m
+    cpus: 0.70
+    networks:
+      - text2sql-net
+
+  text2sql:
+    image: eclipse-temurin:21-jre-jammy
+    container_name: text2sql-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_started
+    working_dir: /app
+    environment:
+      TZ: Asia/Shanghai
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      SPRING_PROFILES_ACTIVE: server
+      APP_ELASTICSEARCH_ENABLED: ${APP_ELASTICSEARCH_ENABLED:-true}
+      APP_ELASTICSEARCH_BASE_URL: ${APP_ELASTICSEARCH_BASE_URL:-http://elasticsearch:9200}
+      APP_ELASTICSEARCH_INDEX_NAME: ${APP_ELASTICSEARCH_INDEX_NAME:-text2sql_schema}
+      APP_ELASTICSEARCH_USERNAME: ${APP_ELASTICSEARCH_USERNAME:-}
+      APP_ELASTICSEARCH_PASSWORD: ${APP_ELASTICSEARCH_PASSWORD:-}
+      APP_ELASTICSEARCH_ALLOW_IN_MEMORY_FALLBACK: ${APP_ELASTICSEARCH_ALLOW_IN_MEMORY_FALLBACK:-true}
+    command:
+      - java
+      - -Xms256m
+      - -Xmx512m
+      - -XX:MaxMetaspaceSize=192m
+      - -XX:+UseG1GC
+      - -XX:+UseStringDeduplication
+      - -Dfile.encoding=UTF-8
+      - -jar
+      - /app/text2sql-app.jar
+      - --spring.profiles.active=server
+    volumes:
+      # 这里默认直接复用你服务器目录里的 Jar 文件名。
+      - ./text2sql-app.jar:/app/text2sql-app.jar:ro
+    ports:
+      - "8080:8080"
+    mem_limit: 768m
+    cpus: 1.00
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - text2sql-net
+
+networks:
+  text2sql-net:
+    driver: bridge

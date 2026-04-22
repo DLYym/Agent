@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: demo-ai
+  profiles:
+    default: local
+#langchain4j:
+#  community:
+#    dashscope:
+#      # 1. 普通对话模型 (Qwen-Plus)
+#      chat-model:
+#        api-key: sk-614688a6c03346198cb13321c69172d1
+#        model-name: qwen-plus-latest  # 推荐加上 -latest 确保用到最新 Qwen3 架构
+#
+#      # 2. 流式对话模型
+#      # 注意：qwen3-8b 如果没有独立部署实例，公共 API 无法直接通过此名称调用。
+#      # 这里暂时改为 qwen-turbo (速度快，适合流式)，或者如果您有部署实例，请填写实例ID
+#      streaming-chat-model:
+#        api-key: sk-614688a6c03346198cb13321c69172d1
+#        model-name: qwen-turbo-latest
+#      # 3. 向量嵌入模型 (Embedding)
+#      # 修正：不能使用 rerank 模型做 embedding，改用 text-embedding-v3
+#      embedding-model:
+#        api-key: sk-614688a6c03346198cb13321c69172d1
+#        model-name: text-embedding-v3   # 阿里当前最强通用嵌入模型
+
+app:
+  rag:
+    schema-top-k: 6
+    schema-focus-top-k: 3
+    vector-weight: 0.65
+    keyword-weight: 0.35
+  elasticsearch:
+    enabled: false
+    base-url: http://localhost:9200
+    index-name: text2sql_schema
+    allow-in-memory-fallback: true
+  datasource-cache:
+    max-size: 32
+    expire-after-access: 30m
+    max-pool-size: 10
+    min-idle: 2
+    idle-timeout: 120s
+    connection-timeout: 30s
+    validation-timeout: 5s
+    leak-detection-threshold: 60000
+  workflow:
+    max-repair-attempts: 2
+    auto-execute-generated-sql: true
+    llm-stream-timeout: 2m
+logging:
+  level:
+    com.yk.demoai: INFO
+

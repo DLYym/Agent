@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>知识库上传 | DB-GPT Lite</title>
+    <script src="./js/tailwind.min.js"></script>
+    <script src="./js/vue.global.prod.js"></script>
+    <style>
+        @font-face {
+            font-family: 'ChineseOptimized';
+            src: local('Microsoft YaHei'),
+                 local('PingFang SC'),
+                 local('Hiragino Sans GB'),
+                 local('Source Han Sans CN'),
+                 local('Noto Sans CJK SC'),
+                 local('SimHei'),
+                 local('sans-serif');
+        }
+
+        * {
+            font-family: 'ChineseOptimized', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                         'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+                         'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        :root {
+            --page-bg: #f4efe7;
+            --panel-bg: rgba(255, 252, 247, 0.92);
+            --panel-border: rgba(103, 80, 54, 0.16);
+            --ink: #221a14;
+            --muted: #706252;
+            --accent: #b05a36;
+            --accent-dark: #8f4324;
+            --accent-soft: #f2d8ca;
+            --forest: #236251;
+            --forest-soft: #d6ece5;
+            --shadow: 0 24px 60px rgba(81, 56, 34, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: radial-gradient(circle at top left, rgba(255, 224, 206, 0.78), transparent 35%),
+                       radial-gradient(circle at top right, rgba(208, 232, 223, 0.8), transparent 30%),
+                       linear-gradient(180deg, #f9f2ea 0%, var(--page-bg) 52%, #efe5d8 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        [v-cloak] {
+            display: none !important;
+        }
+
+        .page-shell {
+            width: min(1320px, calc(100vw - 32px));
+            margin: 0 auto;
+            padding: 28px 0 48px;
+        }
+
+        .glass-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+        }
+
+        .pulse-dot {
+            position: relative;
+        }
+
+        .pulse-dot::after {
+            content: "";
+            position: absolute;
+            inset: -5px;
+            border-radius: 999px;
+            background: currentColor;
+            opacity: 0.15;
+            animation: pulse 1.9s ease-out infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.22; }
+            70% { transform: scale(1.9); opacity: 0; }
+            100% { transform: scale(1.9); opacity: 0; }
+        }
+
+        .file-drop-zone {
+            border: 2px dashed rgba(103, 80, 54, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .file-drop-zone:hover {
+            border-color: var(--accent);
+            background: rgba(242, 216, 202, 0.1);
+        }
+
+        .file-drop-zone.drag-over {
+            border-color: var(--forest);
+            background: rgba(208, 236, 229, 0.2);
+        }
+
+        .upload-progress-bar {
+            background: linear-gradient(90deg, var(--forest), var(--accent));
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak class="page-shell">
+    <header class="mb-6 overflow-hidden rounded-[28px] border border-[rgba(103,80,54,0.16)] bg-[rgba(255,250,244,0.85)] p-8 shadow-[0_24px_60px_rgba(81,56,34,0.12)]">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="max-w-3xl">
+                <p class="mb-3 text-xs font-semibold uppercase tracking-[0.45em] text-[var(--muted)]">Knowledge Library</p>
+                <h1 class="max-w-2xl text-4xl font-semibold leading-tight text-[var(--ink)] lg:text-5xl">
+                    知识库文件上传
+                </h1>
+                <p class="mt-4 max-w-2xl text-sm leading-7 text-[var(--muted)] lg:text-base">
+                    上传文档到知识库，提升 Text-to-SQL 系统的语义理解能力。支持多种文档格式。
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="./index.html"
+                   class="inline-flex items-center justify-center rounded-2xl border border-[rgba(103,80,54,0.14)] bg-white/80 px-6 py-3 text-sm font-semibold text-[var(--muted)] transition hover:border-[rgba(176,90,54,0.35)] hover:text-[var(--accent-dark)]">
+                    返回首页
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="grid gap-6 lg:grid-cols-[400px_minmax(0,1fr)]">
+        <aside class="space-y-6">
+            <section class="glass-card rounded-[28px] p-6">
+                <div class="mb-5">
+                    <p class="text-[11px] uppercase tracking-[0.35em] text-[var(--muted)]">上传说明</p>
+                    <h2 class="mt-2 text-2xl font-semibold text-[var(--ink)]">使用指南</h2>
+                </div>
+
+                <div class="space-y-4 text-sm leading-7 text-[var(--muted)]">
+                    <div class="rounded-2xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--forest-soft)] text-xs font-semibold text-[var(--forest)]">1</div>
+                            <div>
+                                <p class="font-semibold text-[var(--ink)]">选择文件</p>
+                                <p class="mt-1">点击上传区域或拖拽文件到指定区域</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--forest-soft)] text-xs font-semibold text-[var(--forest)]">2</div>
+                            <div>
+                                <p class="font-semibold text-[var(--ink)]">确认上传</p>
+                                <p class="mt-1">点击"开始上传"按钮提交文件</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="flex items-start gap-3">
+                            <div class="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--forest-soft)] text-xs font-semibold text-[var(--forest)]">3</div>
+                            <div>
+                                <p class="font-semibold text-[var(--ink)]">查看结果</p>
+                                <p class="mt-1">上传成功后会显示确认信息</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="glass-card rounded-[28px] p-6">
+                <div class="mb-4">
+                    <p class="text-[11px] uppercase tracking-[0.35em] text-[var(--muted)]">支持的格式</p>
+                    <h2 class="mt-2 text-xl font-semibold text-[var(--ink)]">文件类型</h2>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="text-2xl">📄</div>
+                        <div>
+                            <p class="text-sm font-semibold text-[var(--ink)]">文本文件</p>
+                            <p class="text-xs text-[var(--muted)]">.txt, .md, .json</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="text-2xl">📊</div>
+                        <div>
+                            <p class="text-sm font-semibold text-[var(--ink)]">表格文件</p>
+                            <p class="text-xs text-[var(--muted)]">.csv, .xlsx, .xls</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                        <div class="text-2xl">📚</div>
+                        <div>
+                            <p class="text-sm font-semibold text-[var(--ink)]">文档文件</p>
+                            <p class="text-xs text-[var(--muted)]">.pdf, .docx, .doc</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </aside>
+
+        <section class="glass-card overflow-hidden rounded-[32px]">
+            <div class="border-b border-[rgba(103,80,54,0.1)] bg-[rgba(255,250,244,0.9)] px-7 py-6">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-[0.35em] text-[var(--muted)]">File Upload</p>
+                        <h2 class="mt-2 text-3xl font-semibold text-[var(--ink)]">上传文件</h2>
+                        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">
+                            选择要上传的文件，支持批量上传多个文件。
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="pulse-dot inline-flex h-2.5 w-2.5 rounded-full"
+                              :class="uploadStatus === 'success' ? 'text-[var(--forest)] bg-[var(--forest)]' : uploadStatus === 'failed' ? 'text-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'text-slate-400 bg-slate-400'"></span>
+                        <span class="text-sm font-semibold text-[var(--ink)]">{{ uploadStatusText }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-7 space-y-6">
+                <div v-if="errorMessage"
+                     class="rounded-[22px] border border-[rgba(176,90,54,0.16)] bg-[rgba(255,238,231,0.86)] px-5 py-4 text-sm leading-7 text-[var(--accent-dark)]">
+                    {{ errorMessage }}
+                </div>
+
+                <div v-if="successMessage"
+                     class="rounded-[22px] border border-[rgba(35,98,81,0.16)] bg-[rgba(240,255,240,0.86)] px-5 py-4 text-sm leading-7 text-[var(--forest)]">
+                    {{ successMessage }}
+                </div>
+
+                <!-- 文件拖放区域 -->
+                <div
+                     class="file-drop-zone rounded-[24px] bg-white/70 p-12 text-center cursor-pointer"
+                     :class="{ 'drag-over': isDragOver }"
+                     @dragover.prevent="isDragOver = true"
+                     @dragleave.prevent="isDragOver = false"
+                     @drop.prevent="handleDrop"
+                     @click="triggerFileSelect">
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        multiple
+                        @change="handleFileSelect"
+                        class="hidden">
+
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="text-6xl" v-if="!isDragOver">📁</div>
+                        <div class="text-6xl" v-else>📥</div>
+
+                        <div>
+                            <p class="text-xl font-semibold text-[var(--ink)]">
+                                {{ isDragOver ? '释放文件以上传' : '点击选择或拖拽文件到此处' }}
+                            </p>
+                            <p class="mt-2 text-sm text-[var(--muted)]">
+                                支持批量上传，单文件最大 50MB
+                            </p>
+                        </div>
+
+                        <div class="mt-4 rounded-full border border-[rgba(103,80,54,0.14)] px-6 py-2 text-sm font-semibold text-[var(--muted)]">
+                            {{ selectedFiles.length }} 个文件已选择
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已选择的文件列表 -->
+                <div v-if="selectedFiles.length > 0" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">已选择的文件</p>
+                        <button
+                            @click="clearFiles"
+                            class="text-sm font-semibold text-[var(--accent-dark)] hover:text-[var(--accent)]">
+                            清空列表
+                        </button>
+                    </div>
+
+                    <div class="space-y-2 max-h-[300px] overflow-auto scrollbar">
+                        <div v-for="(file, index) in selectedFiles"
+                             :key="index"
+                             class="flex items-center justify-between rounded-2xl border border-[rgba(103,80,54,0.1)] bg-white/70 px-4 py-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="text-2xl">📄</div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-sm font-semibold text-[var(--ink)]">{{ file.name }}</p>
+                                    <p class="text-xs text-[var(--muted)]">{{ formatFileSize(file.size) }}</p>
+                                </div>
+                            </div>
+                            <button
+                                @click="removeFile(index)"
+                                class="rounded-full p-2 text-[var(--muted)] hover:bg-[rgba(176,90,54,0.1)] hover:text-[var(--accent-dark)]">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上传进度 -->
+                <div v-if="isUploading" class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted)]">上传进度</p>
+                        <span class="text-sm font-semibold text-[var(--ink)]">{{ uploadProgress }}%</span>
+                    </div>
+
+                    <div class="h-3 rounded-full bg-[rgba(103,80,54,0.1)] overflow-hidden">
+                        <div
+                            class="upload-progress-bar h-full rounded-full"
+                            :style="{ width: uploadProgress + '%' }">
+                        </div>
+                    </div>
+
+                    <p class="text-center text-sm text-[var(--muted)]">
+                        {{ uploadStatusText }}
+                    </p>
+                </div>
+
+                <!-- 上传按钮 -->
+                <div class="flex justify-end gap-3">
+                    <button
+                        @click="clearFiles"
+                        :disabled="selectedFiles.length === 0 || isUploading"
+                        class="inline-flex items-center justify-center rounded-2xl border border-[rgba(103,80,54,0.14)] bg-white/80 px-6 py-3 text-sm font-semibold text-[var(--muted)] transition hover:border-[rgba(176,90,54,0.35)] hover:text-[var(--accent-dark)] disabled:cursor-not-allowed disabled:opacity-60">
+                        清空
+                    </button>
+                    <button
+                        @click="handleUpload"
+                        :disabled="selectedFiles.length === 0 || isUploading"
+                        class="inline-flex items-center justify-center rounded-2xl bg-[var(--forest)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#18483a] disabled:cursor-not-allowed disabled:opacity-60">
+                        <span v-if="isUploading" class="mr-2">上传中...</span>
+                        <span v-else>开始上传</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const { createApp, ref, computed } = Vue;
+
+    createApp({
+        setup() {
+            const selectedFiles = ref([]);
+            const isDragOver = ref(false);
+            const isUploading = ref(false);
+            const uploadProgress = ref(0);
+            const uploadStatus = ref('idle');
+            const errorMessage = ref('');
+            const successMessage = ref('');
+            const fileInput = ref(null);
+
+            const uploadStatusText = computed(() => {
+                if (uploadStatus.value === 'idle') return '待上传';
+                if (uploadStatus.value === 'uploading') return '上传中...';
+                if (uploadStatus.value === 'success') return '上传成功';
+                if (uploadStatus.value === 'failed') return '上传失败';
+                return '未知状态';
+            });
+
+            const triggerFileSelect = () => {
+                fileInput.value?.click();
+            };
+
+            const handleFileSelect = (event) => {
+                const files = Array.from(event.target.files || []);
+                addFiles(files);
+            };
+
+            const handleDrop = (event) => {
+                isDragOver.value = false;
+                const files = Array.from(event.dataTransfer.files || []);
+                addFiles(files);
+            };
+
+            const addFiles = (files) => {
+                // 过滤重复文件
+                const newFiles = files.filter(file =>
+                    !selectedFiles.value.some(existingFile =>
+                        existingFile.name === file.name &&
+                        existingFile.size === file.size
+                    )
+                );
+                selectedFiles.value = [...selectedFiles.value, ...newFiles];
+                // 重置状态
+                uploadStatus.value = 'idle';
+                errorMessage.value = '';
+                successMessage.value = '';
+            };
+
+            const removeFile = (index) => {
+                selectedFiles.value.splice(index, 1);
+            };
+
+            const clearFiles = () => {
+                selectedFiles.value = [];
+                uploadProgress.value = 0;
+                uploadStatus.value = 'idle';
+                errorMessage.value = '';
+                successMessage.value = '';
+                if (fileInput.value) {
+                    fileInput.value.value = '';
+                }
+            };
+
+            const formatFileSize = (bytes) => {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+            };
+
+            const handleUpload = async () => {
+                if (selectedFiles.value.length === 0) {
+                    errorMessage.value = '请先选择要上传的文件';
+                    return;
+                }
+
+                isUploading.value = true;
+                uploadProgress.value = 0;
+                uploadStatus.value = 'uploading';
+                errorMessage.value = '';
+                successMessage.value = '';
+
+                try {
+                    // 构建 FormData
+                    const formData = new FormData();
+                    selectedFiles.value.forEach(file => {
+                        formData.append('files', file);
+                    });
+
+                    // 获取 API 基础路径
+                    const apiBaseUrl = new URL("api/", window.location.href);
+
+                    // 模拟进度上传
+                    const progressInterval = setInterval(() => {
+                        if (uploadProgress.value < 90) {
+                            uploadProgress.value += Math.random() * 10;
+                        }
+                    }, 200);
+
+                    const response = await fetch(new URL('documents/upload', apiBaseUrl), {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    clearInterval(progressInterval);
+                    uploadProgress.value = 100;
+
+                    if (response.ok) {
+                        const result = await response.text();
+                        uploadStatus.value = 'success';
+                        successMessage.value = result || '文件上传成功！';
+                        // 3秒后清空文件列表
+                        setTimeout(() => {
+                            clearFiles();
+                        }, 3000);
+                    } else {
+                        throw new Error(`上传失败，状态码: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error('上传错误:', error);
+                    uploadStatus.value = 'failed';
+                    errorMessage.value = error.message || '文件上传失败，请检查网络连接后重试';
+                } finally {
+                    isUploading.value = false;
+                }
+            };
+
+            return {
+                selectedFiles,
+                isDragOver,
+                isUploading,
+                uploadProgress,
+                uploadStatus,
+                uploadStatusText,
+                errorMessage,
+                successMessage,
+                fileInput,
+                triggerFileSelect,
+                handleFileSelect,
+                handleDrop,
+                removeFile,
+                clearFiles,
+                formatFileSize,
+                handleUpload
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
