@@ -7,25 +7,26 @@ import com.yk.demoai.model.SchemaRetrievalContext;
 import com.yk.demoai.model.SchemaSearchHit;
 import com.yk.demoai.model.SchemaSnapshot;
 import com.yk.demoai.service.DatabaseSchemaExtractor;
+import com.yk.demoai.service.LogicalRelationService;
 import com.yk.demoai.service.SchemaDocumentAssembler;
 import com.yk.demoai.service.SchemaHybridRetriever;
 import com.yk.demoai.service.SchemaIndexStore;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * 负责将 Schema 抽取、索引写入、混合召回和目标数据源选择串成完整流程。
- */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SchemaHybridRetrieverImpl implements SchemaHybridRetriever {
@@ -33,6 +34,7 @@ public class SchemaHybridRetrieverImpl implements SchemaHybridRetriever {
     private final DatabaseSchemaExtractor schemaExtractor;
     private final SchemaDocumentAssembler schemaDocumentAssembler;
     private final SchemaIndexStore schemaIndexStore;
+    private final LogicalRelationService logicalRelationService;
     private final AppProperties properties;
 
     @Override
@@ -79,12 +81,32 @@ public class SchemaHybridRetrieverImpl implements SchemaHybridRetriever {
                 .map(SchemaDocument::content)
                 .collect(Collectors.joining("\n\n---\n\n"));
 
+        Set<String> matchedTableNames = datasourceHits.stream()
+                .map(hit -> hit.document().tableName())
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<String> logicalRelations = getLogicalRelations(targetDatasource.id(), matchedTableNames);
+
         return new SchemaRetrievalContext(
                 targetDatasource,
                 targetSnapshot.databaseProductName(),
                 schemaContext,
-                datasourceHits
+                datasourceHits,
+                logicalRelations
         );
+    }
+
+    private List<String> getLogicalRelations(String datasourceId, Set<String> tableNames) {
+        try {
+            log.info("Getting logical relations for datasource: {}, tables: {}", datasourceId, tableNames);
+            List<String> relations = logicalRelationService.getFormattedForeignKeys(datasourceId, tableNames);
+            log.info("Found {} logical relations for datasource: {}", relations.size(), datasourceId);
+            return relations;
+        } catch (Exception e) {
+            log.warn("Failed to get logical relations for datasource: {}, error: {}", datasourceId, e.getMessage());
+            return List.of();
+        }
     }
 
     private DatasourceDescriptor selectTargetDatasource(List<DatasourceDescriptor> datasources,

@@ -364,10 +364,12 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                                     int attempt,
                                     AgentWorkflowStreamListener streamListener,
                                     TokenUsageAccumulator tokenUsageAccumulator) {
+        String logicalRelations = schemaContext.logicalRelationsContext();
         if (!streamListener.streamLlmTokens()) {
             return sanitizeSql(sqlGenerator.generate(
                     schemaContext.schemaContext(),
                     schemaContext.databaseType(),
+                    logicalRelations,
                     question
             ));
         }
@@ -380,6 +382,7 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                 () -> streamingSqlGenerator.generate(
                         schemaContext.schemaContext(),
                         schemaContext.databaseType(),
+                        logicalRelations,
                         question
                 )
         ));
@@ -395,10 +398,12 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                              int attempt,
                              AgentWorkflowStreamListener streamListener,
                              TokenUsageAccumulator tokenUsageAccumulator) {
+        String logicalRelations = schemaContext.logicalRelationsContext();
         if (!streamListener.streamLlmTokens()) {
             return sanitizeSql(sqlRepairGenerator.repair(
                     schemaContext.schemaContext(),
                     schemaContext.databaseType(),
+                    logicalRelations,
                     question,
                     candidateSql,
                     feedback
@@ -413,6 +418,7 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                 () -> streamingSqlRepairGenerator.repair(
                         schemaContext.schemaContext(),
                         schemaContext.databaseType(),
+                        logicalRelations,
                         question,
                         candidateSql,
                         feedback

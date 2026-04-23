@@ -5,6 +5,8 @@
 ### 已知表结构 (Schema)
 {{schema}}
 
+{{logicalRelations}}
+
 ### {{dbType}} 数据库特性说明
 {% if dbType == 'Oracle' %}
 1. 分页查询使用 ROWNUM 方式：

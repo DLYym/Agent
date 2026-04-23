@@ -7,6 +7,8 @@
 ### 已知表结构 (Schema)
 {{schema}}
 
+{{logicalRelations}}
+
 ### 上一版 SQL
 {{previousSql}}
 
