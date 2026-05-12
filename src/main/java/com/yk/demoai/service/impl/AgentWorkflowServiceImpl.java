@@ -365,11 +365,15 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                                     AgentWorkflowStreamListener streamListener,
                                     TokenUsageAccumulator tokenUsageAccumulator) {
         String logicalRelations = schemaContext.logicalRelationsContext();
+        String foreignKeyReplacementRules = schemaContext.foreignKeyReplacementRules();
+        String dictMappingReplacementRules = schemaContext.dictMappingReplacementRules();
         if (!streamListener.streamLlmTokens()) {
             return sanitizeSql(sqlGenerator.generate(
                     schemaContext.schemaContext(),
                     schemaContext.databaseType(),
                     logicalRelations,
+                    foreignKeyReplacementRules,
+                    dictMappingReplacementRules,
                     question
             ));
         }
@@ -383,6 +387,8 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                         schemaContext.schemaContext(),
                         schemaContext.databaseType(),
                         logicalRelations,
+                        foreignKeyReplacementRules,
+                        dictMappingReplacementRules,
                         question
                 )
         ));
@@ -399,11 +405,15 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                              AgentWorkflowStreamListener streamListener,
                              TokenUsageAccumulator tokenUsageAccumulator) {
         String logicalRelations = schemaContext.logicalRelationsContext();
+        String foreignKeyReplacementRules = schemaContext.foreignKeyReplacementRules();
+        String dictMappingReplacementRules = schemaContext.dictMappingReplacementRules();
         if (!streamListener.streamLlmTokens()) {
             return sanitizeSql(sqlRepairGenerator.repair(
                     schemaContext.schemaContext(),
                     schemaContext.databaseType(),
                     logicalRelations,
+                    foreignKeyReplacementRules,
+                    dictMappingReplacementRules,
                     question,
                     candidateSql,
                     feedback
@@ -419,6 +429,8 @@ public class AgentWorkflowServiceImpl implements AgentWorkflowService {
                         schemaContext.schemaContext(),
                         schemaContext.databaseType(),
                         logicalRelations,
+                        foreignKeyReplacementRules,
+                        dictMappingReplacementRules,
                         question,
                         candidateSql,
                         feedback

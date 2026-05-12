@@ -22,4 +22,6 @@ public interface LogicalRelationService {
     List<LogicalRelation> saveLogicalRelations(String datasourceId, List<LogicalRelation> logicalRelations);
 
     List<String> getFormattedForeignKeys(String datasourceId, Set<String> tableNames);
+
+    List<String> getFormattedDictMappings(String datasourceId, Set<String> tableNames);
 }

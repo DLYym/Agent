@@ -9,6 +9,15 @@
 
 {{logicalRelations}}
 
+### 强制字段替换规则
+**【极其重要】你必须严格按照以下规则进行字段替换，绝对不能在 SELECT 中直接返回原始 ID 或编码字段：**
+
+#### 1. 外键关联字段替换规则
+{{foreignKeyReplacementRules}}
+
+#### 2. 字典映射字段替换规则
+{{dictMappingReplacementRules}}
+
 ### 上一版 SQL
 {{previousSql}}
 
@@ -18,3 +27,4 @@
 3. 只输出 SQL 语句本身，不要包含 Markdown 代码块或解释文字。
 4. 只生成只读查询，不得输出 INSERT、UPDATE、DELETE、DROP 等语句。
 5. 如果用户明确提到某个表名，优先保留该表，不要被语义相近的表误导。
+6. **【最高优先级】必须遵循"强制字段替换规则"，所有 ID 字段和编码字段必须被替换为对应的可读字段。**

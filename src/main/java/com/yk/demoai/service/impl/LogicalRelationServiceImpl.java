@@ -182,6 +182,7 @@ public class LogicalRelationServiceImpl implements LogicalRelationService {
         log.info("Found {} logical relations in datasource: {}", allLogicalRelations.size(), datasourceId);
 
         List<String> formattedForeignKeys = allLogicalRelations.stream()
+                .filter(lr -> !lr.isDictMapping())
                 .filter(lr -> tableNames.contains(lr.getSourceTableName()) || 
                              tableNames.contains(lr.getTargetTableName()))
                 .map(LogicalRelation::toForeignKeyFormat)
@@ -191,5 +192,33 @@ public class LogicalRelationServiceImpl implements LogicalRelationService {
         log.info("Filtered {} relevant logical relations for tables: {}", 
                 formattedForeignKeys.size(), tableNames);
         return formattedForeignKeys;
+    }
+
+    @Override
+    public List<String> getFormattedDictMappings(String datasourceId, Set<String> tableNames) {
+        log.info("Getting formatted dict mappings for datasource: {}, tables: {}", datasourceId, tableNames);
+
+        List<LogicalRelation> allLogicalRelations = logicalRelationMapper.selectByDatasourceId(datasourceId);
+
+        List<String> formattedMappings = allLogicalRelations.stream()
+                .filter(LogicalRelation::isDictMapping)
+                .filter(lr -> tableNames.contains(lr.getSourceTableName()) || 
+                             tableNames.contains(lr.getTargetTableName()))
+                .map(lr -> {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(String.format("%s.%s → %s.%s",
+                            lr.getSourceTableName(), lr.getSourceColumnName(),
+                            lr.getTargetTableName(), lr.getTargetColumnName()));
+                    if (lr.getDescription() != null && !lr.getDescription().isBlank()) {
+                        sb.append(" (").append(lr.getDescription()).append(")");
+                    }
+                    return sb.toString();
+                })
+                .distinct()
+                .collect(Collectors.toList());
+
+        log.info("Filtered {} relevant dict mappings for tables: {}",
+                formattedMappings.size(), tableNames);
+        return formattedMappings;
     }
 }

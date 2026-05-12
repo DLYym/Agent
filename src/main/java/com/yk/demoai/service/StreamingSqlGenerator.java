@@ -11,5 +11,7 @@ public interface StreamingSqlGenerator {
     TokenStream generate(@V("schema") String schema,
                          @V("dbType") String dbType,
                          @V("logicalRelations") String logicalRelations,
+                         @V("foreignKeyReplacementRules") String foreignKeyReplacementRules,
+                         @V("dictMappingReplacementRules") String dictMappingReplacementRules,
                          @UserMessage String question);
 }

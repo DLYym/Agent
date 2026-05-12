@@ -1,9 +1,6 @@
 package com.yk.demoai.service.impl;
 
-import com.yk.demoai.model.ColumnSchema;
-import com.yk.demoai.model.SchemaDocument;
-import com.yk.demoai.model.SchemaSnapshot;
-import com.yk.demoai.model.TableSchema;
+import com.yk.demoai.model.*;
 import com.yk.demoai.service.SchemaDocumentAssembler;
 import com.yk.demoai.util.SchemaTermTokenizer;
 import org.springframework.stereotype.Service;
@@ -24,18 +21,23 @@ public class SchemaDocumentAssemblerImpl implements SchemaDocumentAssembler {
     @Override
     public List<SchemaDocument> toDocuments(SchemaSnapshot snapshot) {
         return snapshot.tables().stream()
-                .map(table -> new SchemaDocument(
-                        snapshot.datasource().id() + "::" + table.tableName(),
-                        table.datasourceId(),
-                        table.datasourceName(),
-                        table.catalog(),
-                        table.schemaName(),
-                        table.tableName(),
-                        table.tableComment(),
-                        buildKeywords(table),
-                        buildContent(snapshot, table)
-                ))
+                .map(table -> toDocument(snapshot.datasource(), snapshot.databaseProductName(), table))
                 .toList();
+    }
+
+    @Override
+    public SchemaDocument toDocument(DatasourceDescriptor datasource, String databaseProductName, TableSchema table) {
+        return new SchemaDocument(
+                datasource.id() + "::" + table.tableName(),
+                table.datasourceId(),
+                table.datasourceName(),
+                table.catalog(),
+                table.schemaName(),
+                table.tableName(),
+                table.tableComment(),
+                buildKeywords(table),
+                buildContent(datasource, databaseProductName, table)
+        );
     }
 
     @Override
@@ -46,10 +48,10 @@ public class SchemaDocumentAssemblerImpl implements SchemaDocumentAssembler {
                 .orElse("未检索到可用的表结构信息");
     }
 
-    private String buildContent(SchemaSnapshot snapshot, TableSchema table) {
+    private String buildContent(DatasourceDescriptor datasource, String databaseProductName, TableSchema table) {
         StringBuilder builder = new StringBuilder();
         builder.append("数据源: ").append(table.datasourceName()).append('\n');
-        builder.append("数据库类型: ").append(snapshot.databaseProductName()).append('\n');
+        builder.append("数据库类型: ").append(databaseProductName).append('\n');
         builder.append("Catalog: ").append(defaultText(table.catalog(), "default")).append('\n');
         builder.append("Schema: ").append(defaultText(table.schemaName(), "default")).append('\n');
         builder.append("表名: ").append(table.tableName()).append('\n');

@@ -1,7 +1,9 @@
 package com.yk.demoai.service;
 
+import com.yk.demoai.model.DatasourceDescriptor;
 import com.yk.demoai.model.SchemaDocument;
 import com.yk.demoai.model.SchemaSnapshot;
+import com.yk.demoai.model.TableSchema;
 
 import java.util.List;
 
@@ -14,6 +16,11 @@ public interface SchemaDocumentAssembler {
      * 将 Schema 快照展开为表级文档。
      */
     List<SchemaDocument> toDocuments(SchemaSnapshot snapshot);
+
+    /**
+     * 将单个表转换为文档。
+     */
+    SchemaDocument toDocument(DatasourceDescriptor datasource, String databaseProductName, TableSchema table);
 
     /**
      * 将整个 Schema 快照拼接成适合喂给模型的文本。

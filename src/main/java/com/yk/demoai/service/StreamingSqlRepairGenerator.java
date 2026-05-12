@@ -11,6 +11,8 @@ public interface StreamingSqlRepairGenerator {
     TokenStream repair(@V("schema") String schema,
                        @V("dbType") String dbType,
                        @V("logicalRelations") String logicalRelations,
+                       @V("foreignKeyReplacementRules") String foreignKeyReplacementRules,
+                       @V("dictMappingReplacementRules") String dictMappingReplacementRules,
                        @V("question") String question,
                        @V("previousSql") String previousSql,
                        @UserMessage String feedback);

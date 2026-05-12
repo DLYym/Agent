@@ -17,9 +17,9 @@ public interface LogicalRelationMapper {
     @Insert("""
             INSERT INTO logical_relation
                 (datasource_id, source_table_name, source_column_name, target_table_name, target_column_name,
-                 relation_type, description, is_deleted, created_time, updated_time)
+                 relation_type, relation_category, description, is_deleted, created_time, updated_time)
             VALUES (#{datasourceId}, #{sourceTableName}, #{sourceColumnName}, #{targetTableName}, #{targetColumnName},
-                    #{relationType}, #{description}, 0, NOW(), NOW())
+                    #{relationType}, #{relationCategory}, #{description}, 0, NOW(), NOW())
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     int insert(LogicalRelation logicalRelation);
@@ -33,6 +33,7 @@ public interface LogicalRelationMapper {
                 <if test="targetTableName != null">target_table_name = #{targetTableName},</if>
                 <if test="targetColumnName != null">target_column_name = #{targetColumnName},</if>
                 <if test="relationType != null">relation_type = #{relationType},</if>
+                <if test="relationCategory != null">relation_category = #{relationCategory},</if>
                 <if test="description != null">description = #{description},</if>
                 updated_time = NOW()
             </set>

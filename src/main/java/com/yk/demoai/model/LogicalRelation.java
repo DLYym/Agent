@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
 @Builder
 public class LogicalRelation {
 
+    public static final String CATEGORY_FOREIGN_KEY = "FOREIGN_KEY";
+    public static final String CATEGORY_DICT_MAPPING = "DICT_MAPPING";
+
     private Integer id;
 
     private String datasourceId;
@@ -28,6 +31,8 @@ public class LogicalRelation {
     private String targetColumnName;
 
     private String relationType;
+
+    private String relationCategory;
 
     private String description;
 
@@ -45,5 +50,9 @@ public class LogicalRelation {
         return String.format("%s.%s=%s.%s", 
                 sourceTableName, sourceColumnName, 
                 targetTableName, targetColumnName);
+    }
+
+    public boolean isDictMapping() {
+        return CATEGORY_DICT_MAPPING.equals(relationCategory);
     }
 }

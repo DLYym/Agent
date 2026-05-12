@@ -75,25 +75,74 @@ public class SchemaHybridRetrieverImpl implements SchemaHybridRetriever {
                         result -> new ArrayList<>(result.values())
                 ));
 
-        String schemaContext = selectedDocuments.isEmpty()
-                ? schemaDocumentAssembler.toPromptText(targetSnapshot)
-                : selectedDocuments.stream()
-                .map(SchemaDocument::content)
-                .collect(Collectors.joining("\n\n---\n\n"));
-
         Set<String> matchedTableNames = datasourceHits.stream()
                 .map(hit -> hit.document().tableName())
                 .filter(StringUtils::hasText)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         List<String> logicalRelations = getLogicalRelations(targetDatasource.id(), matchedTableNames);
+        List<String> dictMappings = getDictMappings(targetDatasource.id(), matchedTableNames);
+
+        // 确保字典映射表和外键关联表也在 schemaContext 中
+        Set<String> requiredTableNames = new LinkedHashSet<>();
+        // 从字典映射中找到目标表（通常是 dict_biz）
+        dictMappings.forEach(mapping -> {
+            // 解析类似 "loan_contract.loan_purpose → dict_biz.dict_code" 格式
+            if (mapping.contains(" → ")) {
+                String[] parts = mapping.split(" → ");
+                if (parts.length == 2) {
+                    String targetPart = parts[1];
+                    if (targetPart.contains(".")) {
+                        String dictTableName = targetPart.substring(0, targetPart.indexOf("."));
+                        requiredTableNames.add(dictTableName);
+                    }
+                }
+            }
+        });
+        // 从外键关联中找到目标表（如 customer）
+        logicalRelations.forEach(relation -> {
+            // 解析类似 "customer.cust_id = loan_contract.cust_id" 格式
+            if (relation.contains(" = ")) {
+                String[] parts = relation.split(" = ");
+                for (String part : parts) {
+                    if (part.contains(".")) {
+                        String tableName = part.substring(0, part.indexOf("."));
+                        requiredTableNames.add(tableName);
+                    }
+                }
+            }
+        });
+
+        // 从目标 snapshot 中补充缺失的必需表
+        Set<String> selectedTableNames = selectedDocuments.stream()
+                .map(SchemaDocument::tableName)
+                .collect(Collectors.toSet());
+        for (String requiredTableName : requiredTableNames) {
+            if (!selectedTableNames.contains(requiredTableName)) {
+                targetSnapshot.tables().stream()
+                        .filter(table -> requiredTableName.equalsIgnoreCase(table.tableName()))
+                        .findFirst()
+                        .ifPresent(table -> {
+                            SchemaDocument doc = schemaDocumentAssembler.toDocument(targetDatasource, targetSnapshot.databaseProductName(), table);
+                            selectedDocuments.add(doc);
+                            log.info("Added required table to schema: {}", requiredTableName);
+                        });
+            }
+        }
+
+        String schemaContext = selectedDocuments.isEmpty()
+                ? schemaDocumentAssembler.toPromptText(targetSnapshot)
+                : selectedDocuments.stream()
+                .map(SchemaDocument::content)
+                .collect(Collectors.joining("\n\n---\n\n"));
 
         return new SchemaRetrievalContext(
                 targetDatasource,
                 targetSnapshot.databaseProductName(),
                 schemaContext,
                 datasourceHits,
-                logicalRelations
+                logicalRelations,
+                dictMappings
         );
     }
 
@@ -105,6 +154,18 @@ public class SchemaHybridRetrieverImpl implements SchemaHybridRetriever {
             return relations;
         } catch (Exception e) {
             log.warn("Failed to get logical relations for datasource: {}, error: {}", datasourceId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<String> getDictMappings(String datasourceId, Set<String> tableNames) {
+        try {
+            log.info("Getting dict mappings for datasource: {}, tables: {}", datasourceId, tableNames);
+            List<String> mappings = logicalRelationService.getFormattedDictMappings(datasourceId, tableNames);
+            log.info("Found {} dict mappings for datasource: {}", mappings.size(), datasourceId);
+            return mappings;
+        } catch (Exception e) {
+            log.warn("Failed to get dict mappings for datasource: {}, error: {}", datasourceId, e.getMessage());
             return List.of();
         }
     }
